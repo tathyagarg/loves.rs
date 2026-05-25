@@ -1,0 +1,35 @@
+{
+  "name": "example-with-tailwindcss",
+  "type": "module",
+  "scripts": {
+    "dev": "vinxi dev",
+    "build": "vinxi build",
+    "start": "vinxi start",
+    "preview": "vinxi preview"
+  },
+  "dependencies": {
+    "@kobalte/core": "^0.13.11",
+    "@neondatabase/serverless": "^1.1.0",
+    "@solidjs/router": "^0.15.0",
+    "@solidjs/start": "1.3.2",
+    "arctic": "^3.7.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "drizzle-orm": "^0.45.2",
+    "oslo": "^1.2.1",
+    "solid-js": "^1.9.5",
+    "tailwind-merge": "^3.6.0",
+    "tailwindcss-animate": "^1.0.7",
+    "vinxi": "^0.5.7"
+  },
+  "devDependencies": {
+    "@catppuccin/tailwindcss": "^1.0.0",
+    "@tailwindcss/vite": "^4.0.7",
+    "@types/node": "^25.9.1",
+    "drizzle-kit": "^0.31.10",
+    "tailwindcss": "^4.0.7"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
