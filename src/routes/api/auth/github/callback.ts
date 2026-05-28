@@ -1,6 +1,6 @@
 import { GitHub } from "arctic";
 import { db } from "~/lib/db";
-import { users } from "~/lib/db/schema";
+import { sessions, users } from "~/lib/db/schema";
 
 export async function GET({ request }: { request: Request }) {
   console.log("CLIENT ID: ", process.env.GITHUB_CLIENT_ID);
@@ -48,10 +48,22 @@ export async function GET({ request }: { request: Request }) {
     }
   });
 
+  const sessionID = crypto.randomUUID();
+  const expiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+  await db.insert(sessions).values({
+    id: sessionID,
+    userId: String(githubUser.id),
+    expiresAt: expiry,
+  });
+
   console.log("Upserted user: ", result);
 
   return new Response(null, {
     status: 302,
-    headers: { Location: "/" }
+    headers: {
+      Location: "/",
+      "Set-Cookie": `session=${sessionID}; HttpOnly; Path=/; Expires=${expiry.toUTCString()}`,
+    }
   });
 }
