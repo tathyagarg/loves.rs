@@ -1,3 +1,4 @@
+import { createSignal, Show } from "solid-js";
 import Footer from "~/components/Footer";
 import Nav from "~/components/Nav";
 import { Button } from "~/components/ui/button";
@@ -5,7 +6,44 @@ import { Card, CardContent } from "~/components/ui/card";
 import { Separator } from "~/components/ui/separator";
 import { TextField, TextFieldInput } from "~/components/ui/text-field";
 
+
 export default function Home() {
+  const [subdomain, setSubdomain] = createSignal("");
+  const [availStatus, setAvailStatus] = createSignal<"idle" | "checking" | "available" | "taken">("idle");
+  const [err, setErr] = createSignal<string | null>(null);
+
+  async function checkAvailability() {
+    setAvailStatus("checking");
+
+    if (!subdomain()) {
+      setErr("Subdomain is required");
+      setAvailStatus("idle");
+      return;
+    }
+
+    if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(subdomain())) {
+      setErr("Invalid subdomain");
+      setAvailStatus("idle");
+      return;
+    }
+
+    console.log("Checking availability for: ", subdomain());
+    const res = await fetch(`/api/check/${encodeURIComponent(subdomain())}`);
+    const data = await res.json();
+
+    if (data.error) {
+      setErr(data.error);
+      setAvailStatus("idle");
+      return;
+    }
+
+    if (data.available) {
+      setAvailStatus("available");
+    } else {
+      setAvailStatus("taken");
+    }
+  }
+
   return (
     <main class="min-h-screen bg-background text-foreground font-sans flex flex-col">
       <div class="pointer-events-none fixed inset-0 z-1 overflow-hidden">
@@ -39,16 +77,66 @@ export default function Home() {
           {/* Claim form */}
           <Card id="get-started" class="w-full max-w-md shadow-md">
             <CardContent class="pt-6 flex flex-col gap-3">
-              <div class="flex items-center gap-2">
-
-                <TextField>
-                  <div class="flex items-center gap-2 flex-1">
-                    <TextFieldInput placeholder="yourname" class="font-mono text-sm flex-1" />
-                    <span class="text-muted-foreground font-mono text-sm shrink-0">.loves.rs</span>
+              <div>
+                <Show when={err()} fallback={null}>
+                  <div class="p-3 mb-3 text-sm text-ctp-base bg-ctp-red rounded font-mono">
+                    {err()}
                   </div>
-                </TextField>
+                </Show>
+
+                <div class="flex flex-row items-center justify-between gap-2 w-full">
+                  <TextField>
+                    <div class="flex items-center gap-2 flex-1">
+                      <TextFieldInput
+                        placeholder="yourname"
+                        class="font-mono text-sm flex-1"
+                        value={subdomain()}
+                        onInput={(e) => {
+                          setAvailStatus("idle");
+                          setSubdomain(e.currentTarget.value)
+                          setErr(null);
+                        }}
+                      />
+                      <span class="text-muted-foreground font-mono text-sm shrink-0">.loves.rs</span>
+                    </div>
+                  </TextField>
+
+                  <div class="justify-self-end">
+                    <Show when={availStatus() === "available"}>
+                      <span title="This subdomain is available">
+                        <svg width="24" height="24" viewBox="0 -4 24 24" id="meteor-icon-kit__solid-checkmark" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M3.06066 6.4393C2.47487 5.85355 1.52513 5.85355 0.93934 6.4393C0.353553 7.0251 0.353553 7.9749 0.93934 8.5607L7.93934 15.5607C8.52513 16.1464 9.47487 16.1464 10.0607 15.5607L23.0607 2.56066C23.6464 1.97487 23.6464 1.02513 23.0607 0.43934C22.4749 -0.14645 21.5251 -0.14645 20.9393 0.43934L9 12.3787L3.06066 6.4393z" fill="var(--color-ctp-green)" /></svg>
+                      </span>
+                    </Show>
+                    <Show when={availStatus() === "taken"}>
+                      <span title="This subdomain is already taken">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="24"
+                          height="24"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="var(--color-ctp-red)"
+                          stroke-width="2.5"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        >
+                          <path d="M18 6L6 18" />
+                          <path d="M6 6L18 18" />
+                        </svg>
+                      </span>
+                    </Show>
+                    <Show when={availStatus() === "checking"}>
+                      <span>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="w-4 h-4 inline-block mr-1 animate-spin">
+                          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                      </span>
+                    </Show>
+                  </div>
+                </div>
               </div>
-              <Button class="w-full font-mono text-sm mt-1">
+              <Button class="w-full font-mono text-sm mt-1" onclick={checkAvailability}>
                 check availability
               </Button>
             </CardContent>
