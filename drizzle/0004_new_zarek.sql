@@ -1,0 +1,1 @@
+ALTER TABLE "records" ADD COLUMN "ttl" integer DEFAULT 3600 NOT NULL;

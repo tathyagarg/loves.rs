@@ -1,0 +1,1 @@
+ALTER TABLE "records" ALTER COLUMN "name" SET DEFAULT '@';
