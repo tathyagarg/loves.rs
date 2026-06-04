@@ -7,7 +7,7 @@ export default function Nav() {
   const user = createAsync(() => getCurrentUser());
 
   return (
-    <nav class="px-8 py-5 flex items-center justify-between border-b border-border bg-ctp-base">
+    <nav class="h-[5em] relative z-3 px-8 py-5 flex items-center justify-between border-b border-border bg-ctp-base">
       <a href="/" class="flex items-center gap-2">
         <span class="text-primary font-mono text-sm tracking-widest uppercase">
           loves.rs
