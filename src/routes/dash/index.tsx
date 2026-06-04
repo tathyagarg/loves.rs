@@ -287,18 +287,20 @@ function SubdomainCard({
           </span>
         </div>
         <div class="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-          <button
+          <Button
+            variant="secondary"
             onClick={() => { setShowForm(!showForm()); setExpanded(true); }}
-            class="text-[11px] font-mono px-2.5 py-1 rounded border border-border text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+            class="text-xs font-mono px-3 py-1.5"
           >
             {showForm() ? "— cancel" : "+ add record"}
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="destructive"
             onClick={deleteSubdomain}
-            class="text-[11px] font-mono px-2.5 py-1 rounded border border-border text-red/60 hover:bg-red/10 hover:text-red transition-colors"
+            class="text-xs font-mono px-3 py-1.5"
           >
             delete
-          </button>
+          </Button>
           <span class="text-muted-foreground/40 text-xs ml-1 select-none">
             {expanded() ? "▲" : "▼"}
           </span>
@@ -370,12 +372,19 @@ export default function SubdomainsPage() {
   const [subdomains, { refetch }] = createResource(ready, fetchSubdomains);
 
   return (
-    <div class="relative top-12 max-w-3xl mx-auto px-4 py-8">
-      <Show when={!subdomains.loading}>
-        <p>
-          {JSON.stringify(subdomains())}
-        </p>
+    <div class="relative top-12 max-w-3xl mx-auto px-4 py-8 flex flex-col gap-6">
+      <h1 class="text-2xl font-bold tracking-tight">My Subdomains</h1>
 
+      <For each={subdomains()}>
+        {(sub) => (
+          <SubdomainCard
+            subdomain={sub}
+            onRefetch={refetch}
+          />
+        )}
+      </For>
+
+      <Show when={!subdomains.loading}>
         <Show when={(subdomains()?.length ?? 0) < 3}>
           <Button
             onClick={() => setShowClaimForm(!showClaimForm())}
@@ -397,9 +406,6 @@ export default function SubdomainsPage() {
           />
         </div>
       </Show>
-
-      {/* existing subdomain list */}
-
     </div>
   );
 }

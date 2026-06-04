@@ -134,7 +134,9 @@
 @layer base {
   * {
     @apply border-border;
+    @apply font-mono;
   }
+
   body {
     @apply bg-background text-foreground;
     font-feature-settings:
