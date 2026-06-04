@@ -1,15 +1,14 @@
-import { createAsync } from "@solidjs/router";
 import { createSignal, Show } from "solid-js";
+import { useUser } from "~/components/contexts/UserCtx";
 import Footer from "~/components/Footer";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent } from "~/components/ui/card";
 import { Separator } from "~/components/ui/separator";
 import { TextField, TextFieldInput } from "~/components/ui/text-field";
-import { getCurrentUser } from "~/lib/session";
 
 
 export default function Home() {
-  const user = createAsync(() => getCurrentUser());
+  const user = useUser();
 
   const [subdomain, setSubdomain] = createSignal("");
   const [availStatus, setAvailStatus] = createSignal<"idle" | "checking" | "available" | "taken">("idle");

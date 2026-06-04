@@ -1,29 +1,21 @@
 import { count, eq } from "drizzle-orm";
+import { useUser } from "~/components/contexts/UserCtx";
 import { db } from "~/lib/db";
-import { subdomains } from "~/lib/db/schema";
+import { getSubdomains } from "~/lib/db/data";
+import { subdomains, User } from "~/lib/db/schema";
 import { RESERVED_NAMES } from "~/lib/reserved";
-import { getCurrentUser } from "~/lib/session";
 
 export async function GET({ request }: { request: Request }) {
-  const user = await getCurrentUser();
-
   const url = new URL(request.url);
   const dns = url.searchParams.get("dns") === "true";
 
-  const subs = dns ? await db.query.subdomains.findMany({
-    where: eq(subdomains.ownerId, user?.id ?? ""),
-    with: { records: true },
-  }) : await db.query.subdomains.findMany({
-    where: eq(subdomains.ownerId, user?.id ?? ""),
-  });
+  const user = useUser();
 
-  return new Response(JSON.stringify(subs), {
-    headers: { "Content-Type": "application/json" },
-  });
+  return getSubdomains(user, dns);
 }
 
 export async function POST({ request }: { request: Request }) {
-  const user = await getCurrentUser();
+  const user = useUser();
 
   const { name } = await request.json();
 

@@ -180,3 +180,37 @@
   0% { background-position: 100% 0; }
   100% { background-position: 0% 0; }
 }
+
+.rainbow-slide {
+  background: linear-gradient(
+    90deg,
+    var(--color-ctp-rosewater),
+    var(--color-ctp-flamingo),
+    var(--color-ctp-pink),
+    var(--color-ctp-mauve),
+    var(--color-ctp-red),
+    var(--color-ctp-maroon),
+    var(--color-ctp-peach),
+    var(--color-ctp-yellow),
+    var(--color-ctp-green),
+    var(--color-ctp-teal),
+    var(--color-ctp-sky),
+    var(--color-ctp-sapphire),
+    var(--color-ctp-blue),
+    var(--color-ctp-lavender),
+    var(--color-ctp-rosewater)
+  );
+
+  background-size: 1000% 100%;
+
+  color: transparent;
+  background-clip: text;
+  -webkit-background-clip: text;
+
+  animation: rainbow 60s linear infinite;
+}
+
+@keyframes rainbow {
+  0% { background-position: 1000% center; }
+  100% { background-position: 0 center; }
+}

@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm";
-import { pgTable, text, timestamp, pgEnum, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, pgEnum, boolean, integer } from "drizzle-orm/pg-core";
 
 export const subdomainStateEnum = pgEnum("subdomain_state", ["reserved", "active", "frozen"]);
 
@@ -27,7 +27,9 @@ export const subdomains = pgTable("subdomains", {
 export const records = pgTable("records", {
   subdomain: text("subdomain").notNull().references(() => subdomains.name),
   type: text("type").notNull(),             // A, CNAME, etc.
+  name: text("name").notNull().default('@'),             // e.g. "www", "mail", etc.
   value: text("value").notNull(),
+  ttl: integer("ttl").notNull().default(3600),       // Time to live in seconds
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -57,3 +59,8 @@ export const recordRelations = relations(records, ({ one }) => ({
     references: [subdomains.name],
   }),
 }));
+
+export type User = typeof users.$inferSelect;
+export type Session = typeof sessions.$inferSelect;
+export type Subdomain = typeof subdomains.$inferSelect & { owner: User; records: Record[] };
+export type Record = typeof records.$inferSelect;

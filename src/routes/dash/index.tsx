@@ -1,40 +1,32 @@
-import { createResource, createSignal, For, onMount, Show } from "solid-js";
-import { IconError } from "~/components/icons";
+"use client";
+
+import { createAsync } from "@solidjs/router";
+import { createEffect, createResource, createSignal, For, onMount, Show } from "solid-js";
+import { IconError, IconTrash } from "~/components/icons";
 import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { TextField, TextFieldInput, TextFieldLabel } from "~/components/ui/text-field";
+import { useUser } from "~/components/contexts/UserCtx";
+import { Subdomain } from "~/lib/db/schema";
+import { getSubdomains } from "~/lib/db/data";
 
 const VALID_TYPES = ["A", "AAAA", "CNAME", "MX", "TXT", "NS", "SRV"] as const;
 type RecordType = (typeof VALID_TYPES)[number];
 
-interface DnsRecord {
-  subdomain: string;
-  type: RecordType;
-  value: string;
-  createdAt: string;
-}
+async function fetchSubdomains(user: ReturnType<typeof useUser>): Promise<Subdomain[]> {
+  const res = await getSubdomains(user(), true);
 
-interface Subdomain {
-  name: string;
-  ownerId: string;
-  state: "active" | "reserved";
-  createdAt: string;
-  records: DnsRecord[];
-}
+  console.log("Response status: ", res.status);
 
-async function fetchSubdomains(): Promise<Subdomain[]> {
-  const res = await fetch("/api/subdomains?dns=true",
-    {
-      headers: {
-        "Content-Type": "application/json",
-      },
-    }
-  );
   if (!res.ok) {
     throw new Error("Failed to fetch subdomains");
   }
-  return await res.json();
+
+  let data = await res.json();
+  console.log("Fetched subdomains: ", data);
+
+  return data;
 }
 
 function ClaimSubdomainForm(props: {
@@ -247,158 +239,153 @@ function AddRecordForm({
 
 function SubdomainCard({
   subdomain,
-  onRefetch,
 }: {
   subdomain: Subdomain;
-  onRefetch: () => void;
 }) {
-  const [showForm, setShowForm] = createSignal(false);
-  const [expanded, setExpanded] = createSignal(true);
+  console.log("Rendering SubdomainCard for: ", subdomain);
 
-  async function deleteRecord(record: DnsRecord) {
-    if (!confirm("Delete this record?")) return;
-    await fetch(`/api/subdomains/${subdomain.name}/records`, {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: record.type, value: record.value }),
-    });
-    onRefetch();
-  }
+  onMount(() => {
+    console.log("Mounted SubdomainCard for: ", subdomain);
+  })
 
-  async function deleteSubdomain() {
-    if (!confirm(`Delete ${subdomain.name}.loves.rs and all its records?`)) return;
-    await fetch(`/api/subdomains/${subdomain.name}`, { method: "DELETE" });
-    onRefetch();
+  const [showingAddRecordForm, setShowingAddRecordForm] = createSignal(false);
+
+  function computeSubdomain(subdomain: string, name: string) {
+    if (name === "@") return `${subdomain}.loves.rs`;
+    else return `${name}.${subdomain}.loves.rs`;
   }
 
   return (
-    <div class="border border-border rounded-lg overflow-hidden bg-card">
-      <div
-        class="flex items-center justify-between px-4 py-3 bg-card cursor-pointer hover:bg-muted/40 transition-colors"
-        onClick={() => setExpanded(!expanded())}
-      >
-        <div class="flex items-center gap-2.5">
-          <span class="font-mono text-sm text-foreground">
-            <span class="text-primary">{subdomain.name}</span>.loves.rs
+    <Card class="border border-border rounded-lg p-4 bg-card">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="text-sm font-mono cursor-pointer" title={`${subdomain.name}.loves.rs`}
+          onclick={() => {
+            navigator.clipboard.writeText(`${subdomain.name}.loves.rs`);
+          }}
+        >
+          <span class="">
+            {subdomain.name}
           </span>
-          <Badge state={subdomain.state} />
-          <span class="font-mono text-[11px] text-muted-foreground/50">
-            {subdomain.records.length} record{subdomain.records.length !== 1 ? "s" : ""}
-          </span>
-        </div>
-        <div class="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-          <button
-            onClick={() => { setShowForm(!showForm()); setExpanded(true); }}
-            class="text-[11px] font-mono px-2.5 py-1 rounded border border-border text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-          >
-            {showForm() ? "— cancel" : "+ add record"}
-          </button>
-          <button
-            onClick={deleteSubdomain}
-            class="text-[11px] font-mono px-2.5 py-1 rounded border border-border text-red/60 hover:bg-red/10 hover:text-red transition-colors"
-          >
-            delete
-          </button>
-          <span class="text-muted-foreground/40 text-xs ml-1 select-none">
-            {expanded() ? "▲" : "▼"}
-          </span>
-        </div>
+          .loves.rs
+        </h2>
+        <Badge state={subdomain.state} />
       </div>
 
-      <Show when={expanded()}>
-        <Show when={subdomain.records.length > 0}>
-          <table class="w-full border-collapse text-xs">
+      <Show when={subdomain.records.length > 0} fallback={<p class="text-xs text-muted-foreground">No DNS records yet.</p>}>
+        <div class="flex flex-col gap-3">
+          <table class="w-full text-left text-sm border-collapse">
             <thead>
-              <tr class="border-t border-border bg-muted/30">
-                <For each={["type", "value", "created", ""] as const}>
-                  {(h) => (
-                    <th class="font-mono text-[10px] text-muted-foreground/60 uppercase tracking-wider px-4 py-2 text-left font-normal">
-                      {h}
-                    </th>
-                  )}
-                </For>
+              <tr>
+                <th class="border-b border-border pb-1">Type</th>
+                <th class="border-b border-border pb-1">Name</th>
+                <th class="border-b border-border pb-1">Value</th>
+                <th class="border-b border-border pb-1">TTL</th>
+                <th class="border-b border-border pb-1">Created At</th>
               </tr>
             </thead>
             <tbody>
               <For each={subdomain.records}>
                 {(record) => (
-                  <tr class="border-t border-border/50 hover:bg-muted/20 transition-colors">
-                    <td class="px-4 py-2.5 font-mono text-primary w-20">{record.type}</td>
-                    <td class="px-4 py-2.5 font-mono text-foreground">{record.value}</td>
-                    <td class="px-4 py-2.5 font-mono text-muted-foreground whitespace-nowrap">
-                      {new Date(record.createdAt).toLocaleDateString()}
+                  <tr>
+                    <td class="py-2 border-b border-border">
+                      <span class="text-xs font-mono px-2 py-0.5 rounded bg-muted text-muted-foreground">
+                        {record.type}
+                      </span>
                     </td>
-                    <td class="px-4 py-2.5 text-right w-16">
-                      <button
-                        onClick={() => deleteRecord(record)}
-                        class="font-mono text-[11px] text-red/50 hover:text-red transition-colors"
-                      >
-                        delete
-                      </button>
+                    <td class="py-2 border-b border-border">
+                      <code class="font-mono text-xs text-foreground" title={computeSubdomain(subdomain.name, record.name)}>
+                        {record.name === "@" ? "@" : `${record.name}.`}
+                      </code>
+                    </td>
+                    <td class="py-2 border-b border-border">
+                      <code class="font-mono text-xs text-foreground">{record.value}</code>
+                    </td>
+                    <td class="py-2 border-b border-border">
+                      <code class="font-mono text-xs text-foreground">{record.ttl}</code>
+                    </td>
+                    <td class="py-2 border-b border-border">
+                      <code class="font-mono text-xs text-muted-foreground">
+                        {new Date(record.createdAt).toLocaleString()}
+                      </code>
                     </td>
                   </tr>
                 )}
               </For>
             </tbody>
           </table>
-        </Show>
-
-        <Show when={subdomain.records.length === 0 && !showForm()}>
-          <div class="px-4 py-4 font-mono text-xs text-muted-foreground/50 border-t border-border">
-            no dns records yet — add one to activate this subdomain
-          </div>
-        </Show>
-
-        <Show when={showForm()}>
-          <AddRecordForm
-            subdomain={subdomain.name}
-            onSuccess={() => { setShowForm(false); onRefetch(); }}
-            onCancel={() => setShowForm(false)}
-          />
-        </Show>
+        </div>
       </Show>
-    </div>
+
+      <Show when={showingAddRecordForm()}>
+        <AddRecordForm
+          subdomain={subdomain.name}
+          onSuccess={() => {
+            // refetch subdomains to show the new record
+          }}
+          onCancel={() => {
+            // do nothing, just close the form
+          }}
+        />
+      </Show>
+    </Card>
   );
 }
 
 export default function SubdomainsPage() {
+  const user = useUser();
+
   const [showClaimForm, setShowClaimForm] = createSignal(false);
-  const [ready, setReady] = createSignal(false);
+  const [subdomains] = createResource(() => user, async (user) => {
+    if (!user) return [];
+    return await fetchSubdomains(user);
+  });
 
-  onMount(() => setReady(true));
-
-  const [subdomains, { refetch }] = createResource(ready, fetchSubdomains);
+  // const subdomains = createAsync(async () => {
+  //   return await fetchSubdomains(user);
+  // });
 
   return (
     <div class="relative top-12 max-w-3xl mx-auto px-4 py-8">
-      <Show when={!subdomains.loading}>
-        <p>
-          {JSON.stringify(subdomains())}
-        </p>
+      <h1 class="text-2xl font-bold my-4">Subdomains</h1>
 
-        <Show when={(subdomains()?.length ?? 0) < 3}>
-          <Button
-            onClick={() => setShowClaimForm(!showClaimForm())}
-            class="text-xs font-mono px-3 py-1.5 rounded bg-primary text-primary-foreground"
-          >
-            {showClaimForm() ? "cancel" : "+ claim new"}
-          </Button>
-        </Show>
-      </Show>
-
-      <Show when={showClaimForm()}>
-        <div class="mb-4">
-          <ClaimSubdomainForm
-            onSuccess={() => {
-              setShowClaimForm(false);
-              refetch();
-            }}
-            onCancel={() => setShowClaimForm(false)}
-          />
+      <Show when={subdomains()?.length !== 0}>
+        <div class="flex flex-col gap-4">
+          <For each={subdomains()}>
+            {(sub) => (
+              <SubdomainCard
+                subdomain={sub}
+              />
+            )}
+          </For>
         </div>
       </Show>
 
-      {/* existing subdomain list */}
+      <Show when={subdomains()?.length === 0}>
+        <div class="border border-border rounded-lg p-6 text-center bg-card flex flex-col gap-4">
+          <p class="text-sm text-muted-foreground">You don't have any subdomains yet.</p>
+          <p class="text-xs text-muted-foreground/80">To claim a subdomain, please star the GitHub repo first!</p>
+        </div>
+      </Show>
+
+      <div class="flex justify-end mt-6">
+        <Button
+          onClick={() => alert("To claim a subdomain, please star the GitHub repo first!")}
+          class="text-xs font-mono px-3 py-1.5 rounded bg-primary text-primary-foreground"
+        >
+          {showClaimForm() ? "cancel" : "+ claim new"}
+        </Button>
+
+        <Show when={showClaimForm()}>
+          <div class="mb-4">
+            <ClaimSubdomainForm
+              onSuccess={() => {
+                setShowClaimForm(false);
+              }}
+              onCancel={() => setShowClaimForm(false)}
+            />
+          </div>
+        </Show>
+      </div>
 
     </div>
   );

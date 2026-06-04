@@ -1,10 +1,9 @@
-import { createAsync } from "@solidjs/router";
 import { Show } from "solid-js";
 import { Button } from "./ui/button";
-import { getCurrentUser } from "~/lib/session";
+import { useUser } from "./contexts/UserCtx";
 
 export default function Nav() {
-  const user = createAsync(() => getCurrentUser());
+  const user = useUser();
 
   return (
     <nav class="px-8 py-5 flex items-center justify-between border-b border-border bg-ctp-base">
