@@ -1,3 +1,4 @@
+import { relations } from "drizzle-orm";
 import { pgTable, text, timestamp, pgEnum, boolean } from "drizzle-orm/pg-core";
 
 export const subdomainStateEnum = pgEnum("subdomain_state", ["reserved", "active", "frozen"]);
@@ -17,17 +18,42 @@ export const sessions = pgTable("sessions", {
 });
 
 export const subdomains = pgTable("subdomains", {
-  id: text("id").primaryKey(),
-  name: text("name").notNull().unique(),
+  name: text("name").primaryKey(),
   ownerId: text("owner_id").notNull().references(() => users.id),
   state: subdomainStateEnum("state").notNull().default("reserved"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 export const records = pgTable("records", {
-  id: text("id").primaryKey(),
-  subdomainId: text("subdomain_id").notNull().references(() => subdomains.id),
+  subdomain: text("subdomain").notNull().references(() => subdomains.name),
   type: text("type").notNull(),             // A, CNAME, etc.
   value: text("value").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
+
+export const userRelations = relations(users, ({ many }) => ({
+  sessions: many(sessions),
+  subdomains: many(subdomains),
+}));
+
+export const subdomainRelations = relations(subdomains, ({ one, many }) => ({
+  owner: one(users, {
+    fields: [subdomains.ownerId],
+    references: [users.id],
+  }),
+  records: many(records),
+}));
+
+export const sessionRelations = relations(sessions, ({ one }) => ({
+  user: one(users, {
+    fields: [sessions.userId],
+    references: [users.id],
+  }),
+}));
+
+export const recordRelations = relations(records, ({ one }) => ({
+  subdomain: one(subdomains, {
+    fields: [records.subdomain],
+    references: [subdomains.name],
+  }),
+}));

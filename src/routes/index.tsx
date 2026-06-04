@@ -1,13 +1,16 @@
+import { createAsync } from "@solidjs/router";
 import { createSignal, Show } from "solid-js";
 import Footer from "~/components/Footer";
-import Nav from "~/components/Nav";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent } from "~/components/ui/card";
 import { Separator } from "~/components/ui/separator";
 import { TextField, TextFieldInput } from "~/components/ui/text-field";
+import { getCurrentUser } from "~/lib/session";
 
 
 export default function Home() {
+  const user = createAsync(() => getCurrentUser());
+
   const [subdomain, setSubdomain] = createSignal("");
   const [availStatus, setAvailStatus] = createSignal<"idle" | "checking" | "available" | "taken">("idle");
   const [err, setErr] = createSignal<string | null>(null);
@@ -59,9 +62,6 @@ export default function Home() {
       </div>
 
       <div class="z-2 relative flex-1 flex flex-col">
-        {/* Nav */}
-        <Nav></Nav>
-
         {/* Hero */}
         <section class="flex-1 flex flex-col items-center justify-center px-6 text-center">
           <h1 class="text-5xl sm:text-6xl font-bold tracking-tight leading-[1.1] mb-6 max-w-2xl">
@@ -148,6 +148,18 @@ export default function Home() {
             <span class="text-foreground">dev.loves.rs</span>,{" "}
             <span class="text-foreground">blog.loves.rs</span>
           </p>
+
+          <Show when={user()}>
+            <Button
+              variant="link"
+              size="lg"
+              class="font-mono text-sm mt-8"
+            >
+              <a href="/dash" class="w-full h-full">
+                Go to Dashboard
+              </a>
+            </Button>
+          </Show>
         </section>
 
         <Separator />

@@ -8,9 +8,12 @@ export default function Nav() {
 
   return (
     <nav class="px-8 py-5 flex items-center justify-between border-b border-border bg-ctp-base">
-      <span class="text-primary font-mono text-sm tracking-widest uppercase">
-        loves.rs
-      </span>
+      <a href="/" class="flex items-center gap-2">
+        <span class="text-primary font-mono text-sm tracking-widest uppercase">
+          loves.rs
+        </span>
+      </a>
+
       <Show
         when={user()}
         fallback={
