@@ -1,5 +1,5 @@
 import { createResource, createSignal, For, onMount, Show } from "solid-js";
-import { IconError } from "~/components/icons";
+import { IconError, IconTrash } from "~/components/icons";
 import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
@@ -11,6 +11,7 @@ type RecordType = (typeof VALID_TYPES)[number];
 interface DnsRecord {
   subdomain: string;
   type: RecordType;
+  name: string;
   value: string;
   createdAt: string;
 }
@@ -210,7 +211,7 @@ function AddRecordForm({
             type="text"
             value={value()}
             onInput={(e) => setValue(e.currentTarget.value)}
-            placeholder="e.g. 49.205.216.130"
+            placeholder="e.g. 1.2.3.4"
             class="bg-muted border border-border rounded text-foreground font-mono text-sm px-2 py-1.5 outline-none focus:border-accent w-full"
           />
         </div>
@@ -226,19 +227,20 @@ function AddRecordForm({
       </div>
       <div class="flex items-center justify-between">
         <div class="flex gap-2">
-          <button
+          <Button
             onClick={onCancel}
+            variant="outline"
             class="text-xs font-mono px-3 py-1.5 rounded border border-border text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
           >
             cancel
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={submit}
             disabled={loading()}
             class="text-xs font-mono px-3 py-1.5 rounded bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
           >
             {loading() ? "adding..." : "add record"}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -270,6 +272,8 @@ function SubdomainCard({
     await fetch(`/api/subdomains/${subdomain.name}`, { method: "DELETE" });
     onRefetch();
   }
+
+  console.log("Rendering card for: ", subdomain);
 
   return (
     <div class="border border-border rounded-lg overflow-hidden bg-card">
@@ -312,7 +316,7 @@ function SubdomainCard({
           <table class="w-full border-collapse text-xs">
             <thead>
               <tr class="border-t border-border bg-muted/30">
-                <For each={["type", "value", "created", ""] as const}>
+                <For each={["type", "name", "value", "created", ""] as const}>
                   {(h) => (
                     <th class="font-mono text-[10px] text-muted-foreground/60 uppercase tracking-wider px-4 py-2 text-left font-normal">
                       {h}
@@ -326,6 +330,7 @@ function SubdomainCard({
                 {(record) => (
                   <tr class="border-t border-border/50 hover:bg-muted/20 transition-colors">
                     <td class="px-4 py-2.5 font-mono text-primary w-20">{record.type}</td>
+                    <td class="px-4 py-2.5 font-mono text-foreground">{record.name}</td>
                     <td class="px-4 py-2.5 font-mono text-foreground">{record.value}</td>
                     <td class="px-4 py-2.5 font-mono text-muted-foreground whitespace-nowrap">
                       {new Date(record.createdAt).toLocaleDateString()}
@@ -333,9 +338,9 @@ function SubdomainCard({
                     <td class="px-4 py-2.5 text-right w-16">
                       <button
                         onClick={() => deleteRecord(record)}
-                        class="font-mono text-[11px] text-red/50 hover:text-red transition-colors"
+                        class="font-mono text-ctp-red/75 hover:text-ctp-red transition-colors"
                       >
-                        delete
+                        <IconTrash class="h-4 w-4" />
                       </button>
                     </td>
                   </tr>
@@ -372,7 +377,7 @@ export default function SubdomainsPage() {
   const [subdomains, { refetch }] = createResource(ready, fetchSubdomains);
 
   return (
-    <div class="relative top-12 max-w-3xl mx-auto px-4 py-8 flex flex-col gap-6">
+    <div class="relative z-3 top-12 max-w-3xl mx-auto px-4 py-8 flex flex-col gap-6">
       <h1 class="text-2xl font-bold tracking-tight">My Subdomains</h1>
 
       <For each={subdomains()}>

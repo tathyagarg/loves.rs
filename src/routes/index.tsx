@@ -49,18 +49,6 @@ export default function Home() {
 
   return (
     <main class="min-h-[calc(100vh-5em)] bg-background text-foreground font-sans flex flex-col">
-      <div class="pointer-events-none fixed inset-0 z-1 overflow-hidden">
-        <div class="absolute inset-0 animate-[stripes_30s_linear_infinite]"
-          style="background: repeating-linear-gradient(
-      105deg,
-      transparent 0px,
-      transparent 120px,
-      rgba(from var(--color-ctp-base) r g b / 0.25) 120px,
-      rgba(from var(--color-ctp-base) r g b / 0.25) 240px
-    ); background-size: 200% 100%;"
-        />
-      </div>
-
       <div class="z-2 relative flex-1 flex flex-col">
         {/* Hero */}
         <section class="flex-1 flex flex-col items-center justify-center px-6 text-center">
@@ -195,10 +183,6 @@ export default function Home() {
             ))}
           </div>
         </section>
-
-        <Separator />
-
-        <Footer></Footer>
       </div>
     </main>
   );
