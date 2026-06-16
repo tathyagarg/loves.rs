@@ -50,6 +50,13 @@
       "when": 1780671124977,
       "tag": "0006_hot_tusk",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1781611676435,
+      "tag": "0007_spicy_tiger_shark",
+      "breakpoints": true
     }
   ]
 }

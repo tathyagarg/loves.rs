@@ -20,7 +20,7 @@ export const sessions = pgTable("sessions", {
 export const subdomains = pgTable("subdomains", {
   name: text("name").primaryKey(),
   ownerId: text("owner_id").notNull().references(() => users.id),
-  state: subdomainStateEnum("state").notNull().default("reserved"),
+  state: subdomainStateEnum("state").notNull().default("active"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -59,3 +59,5 @@ export const recordRelations = relations(records, ({ one }) => ({
     references: [subdomains.name],
   }),
 }));
+
+export type User = typeof users.$inferSelect;

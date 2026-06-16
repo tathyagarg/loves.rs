@@ -1,0 +1,1 @@
+ALTER TABLE "subdomains" ALTER COLUMN "state" SET DEFAULT 'active';

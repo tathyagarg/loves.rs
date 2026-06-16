@@ -4,6 +4,7 @@ import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { TextField, TextFieldInput, TextFieldLabel } from "~/components/ui/text-field";
+import { createRecord } from "~/lib/raincloud";
 
 const VALID_TYPES = ["A", "AAAA", "CNAME", "MX", "TXT", "NS", "SRV"] as const;
 type RecordType = (typeof VALID_TYPES)[number];
@@ -82,7 +83,7 @@ function ClaimSubdomainForm(props: {
   return (
     <Card class="border border-border rounded-lg p-4 bg-card flex flex-col gap-3">
       <Show when={error()}>
-        <Alert class="bg-ctp-red text-ctp-base!">
+        <Alert class="bg-ctp-red! text-ctp-base!">
           <IconError />
           <AlertTitle>Error</AlertTitle>
           <AlertDescription>
@@ -158,8 +159,9 @@ function AddRecordForm({
   onCancel: () => void;
 }) {
   const [type, setType] = createSignal<RecordType>("A");
+  const [name, setName] = createSignal("");
   const [value, setValue] = createSignal("");
-  const [ttl, setTtl] = createSignal(3600);
+  const [ttl, setTtl] = createSignal("auto");
   const [loading, setLoading] = createSignal(false);
   const [error, setError] = createSignal<string | null>(null);
 
@@ -171,17 +173,19 @@ function AddRecordForm({
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/subdomains/${subdomain}/records`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: type(), value: value(), ttl: ttl() }),
-      });
+      const data = (type() === "A" || type() === "AAAA") ? { address: value() } : (
+        (type() === "TXT") ? { text: value() } : { target: value() }
+      );
+
+      const res = await createRecord(subdomain, name(), data, type(), ttl());
+
       if (!res.ok) {
         const d = await res.json();
         setError(d.error ?? "Failed to add record");
       } else {
         onSuccess();
       }
+
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unknown error");
     } finally {
@@ -192,9 +196,9 @@ function AddRecordForm({
   return (
     <div class="px-4 py-3 border-t border-border bg-background flex flex-col gap-3">
       <Show when={error()}>
-        <p class="text-red text-xs font-mono">⚠ {error()}</p>
+        <p class="text-ctp-red text-xs font-mono">⚠ {error()}</p>
       </Show>
-      <div class="grid grid-cols-[120px_1fr_110px] gap-2 items-end">
+      <div class="grid grid-cols-[1fr_2fr_2fr_1fr] gap-2 items-end">
         <div class="flex flex-col gap-1">
           <label class="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">type</label>
           <select
@@ -205,6 +209,18 @@ function AddRecordForm({
             <For each={VALID_TYPES}>{(t) => <option value={t}>{t}</option>}</For>
           </select>
         </div>
+
+        <div class="flex flex-col gap-1">
+          <label class="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">name</label>
+          <input
+            type="text"
+            value={name()}
+            onInput={(e) => setName(e.currentTarget.value)}
+            placeholder="e.g. www"
+            class="bg-muted border border-border rounded text-foreground font-mono text-sm px-2 py-1.5 outline-none focus:border-accent w-full"
+          />
+        </div>
+
         <div class="flex flex-col gap-1">
           <label class="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">value</label>
           <input
@@ -217,12 +233,16 @@ function AddRecordForm({
         </div>
         <div class="flex flex-col gap-1">
           <label class="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">ttl (s)</label>
-          <input
-            type="number"
+          <select
             value={ttl()}
-            onInput={(e) => setTtl(parseInt(e.currentTarget.value))}
+            onInput={(e) => setTtl(e.currentTarget.value)}
             class="bg-muted border border-border rounded text-foreground font-mono text-sm px-2 py-1.5 outline-none focus:border-accent w-full"
-          />
+          >
+            <option value="auto">auto</option>
+            <option value="5m">5m</option>
+            <option value="1h">1h</option>
+            <option value="1d">1d</option>
+          </select>
         </div>
       </div>
       <div class="flex items-center justify-between">
