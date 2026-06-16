@@ -1,10 +1,11 @@
 import { createResource, createSignal, For, onMount, Show } from "solid-js";
-import { IconError, IconTrash } from "~/components/icons";
+import { IconError, IconGithub, IconTrash } from "~/components/icons";
 import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { TextField, TextFieldInput, TextFieldLabel } from "~/components/ui/text-field";
 import { createRecord } from "~/lib/raincloud";
+import { getCurrentUser, approveUser, userHasStarred } from "~/lib/session";
 import { rigorouslyValidateSubdomain } from "~/lib/utils";
 
 const VALID_TYPES = ["A", "AAAA", "CNAME", "MX", "TXT", "NS", "SRV"] as const;
@@ -69,30 +70,46 @@ function ClaimSubdomainForm(props: {
       return;
     }
 
-    setLoading(true);
-    setError(null);
+    let starred = false;
 
-    try {
-      const res = await fetch("/api/subdomains", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: name(),
-        }),
-      });
-
-      if (!res.ok) {
-        const d = await res.json();
-        setError(d.error ?? "Failed");
-      } else {
-        props.onSuccess();
+    const user = await getCurrentUser();
+    if (!user?.hasStarred) {
+      if (await userHasStarred(user?.username ?? "")) {
+        approveUser(user?.username ?? "");
+        starred = true;
       }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Unknown error");
-    } finally {
-      setLoading(false);
+    }
+
+    starred = starred || (user?.hasStarred ?? false);
+
+    if (starred) {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const res = await fetch("/api/subdomains", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: name(),
+          }),
+        });
+
+        if (!res.ok) {
+          const d = await res.json();
+          setError(d.error ?? "Failed");
+        } else {
+          props.onSuccess();
+        }
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Unknown error");
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      setError("You must star the repository to claim a subdomain. Please star it and try again. It may take a few minutes for GitHub to register your star.");
     }
   }
 
@@ -104,6 +121,18 @@ function ClaimSubdomainForm(props: {
           <AlertTitle>Error</AlertTitle>
           <AlertDescription>
             {error()}
+
+            <Show when={error()?.includes("star")}>
+              <Button
+                variant="secondary"
+                class="flex text-xs font-mono border-border border-1"
+              >
+                <IconGithub />
+                <a href="https://github.com/tathyagarg/loves.rs" target="_blank" rel="noopener noreferrer">
+                  Star the repo
+                </a>
+              </Button>
+            </Show>
           </AlertDescription>
         </Alert>
       </Show>
