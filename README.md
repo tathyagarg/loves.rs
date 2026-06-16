@@ -1,6 +1,6 @@
-![Banner](.github/assets/banner.png)
-
 <div align="center">
+
+  ![Banner](.github/assets/banner.png)
 
   # loves.rs
 
