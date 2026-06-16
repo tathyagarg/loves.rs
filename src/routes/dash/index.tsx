@@ -455,8 +455,16 @@ function SubdomainCard({
 export default function SubdomainsPage() {
   const [showClaimForm, setShowClaimForm] = createSignal(false);
   const [ready, setReady] = createSignal(false);
+  const [popupClosed, setPopupClosed] = createSignal(false);
 
-  onMount(() => setReady(true));
+  onMount(() => {
+    setReady(true)
+
+    const storedPopupClosed = localStorage.getItem("popupClosed");
+    if (storedPopupClosed) {
+      setPopupClosed(storedPopupClosed === "true");
+    }
+  });
 
   const [subdomains, { refetch }] = createResource(ready, fetchSubdomains);
 
@@ -477,6 +485,31 @@ export default function SubdomainsPage() {
           </Show>
         </Show>
       </div>
+
+      <Show when={!popupClosed()}>
+        <Alert class="bg-ctp-blue/10 text-ctp-blue border-1 border-ctp-blue/30">
+          <IconGithub class="text-ctp-blue" />
+          <AlertTitle>Welcome to loves.rs!</AlertTitle>
+          <AlertDescription class="text-secondary-foreground">
+            To claim a subdomain, first star the{" "}
+            <a href="https://github.com/tathyagarg/loves.rs" target="_blank" rel="noopener noreferrer" class="text-ctp-blue underline">
+              GitHub repository
+            </a>
+            . It may take a few minutes for GitHub to register your star. Once you’ve done that, you can claim your subdomain and start adding DNS records to it.
+          </AlertDescription>
+
+          <Button
+            size="sm"
+            class="mt-4 bg-ctp-blue text-ctp-base font-semibold shadow-md hover:scale-[1.02] hover:bg-ctp-blue/90 transition-all px-4!"
+            onClick={() => {
+              setPopupClosed(true);
+              localStorage.setItem("popupClosed", "true");
+            }}
+          >
+            Got it!
+          </Button>
+        </Alert>
+      </Show>
 
       <Show when={showClaimForm()}>
         <div class="mb-4">
