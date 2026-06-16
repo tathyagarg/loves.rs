@@ -48,7 +48,7 @@ export async function POST({ request }: { request: Request }) {
   }
 
   // validate subdomain name
-  if (validateSubdomain(name) !== null) {
+  if (validateSubdomain(name)) {
     return new Response(JSON.stringify({ error: "Invalid subdomain name" }), {
       status: 400,
       headers: { "Content-Type": "application/json" },

@@ -58,7 +58,6 @@ const flattenSubdomain = (sub: string, subsub: string) => {
 
 function ClaimSubdomainForm(props: {
   onSuccess: () => void;
-  onCancel: () => void;
 }) {
   const [name, setName] = createSignal("");
   const [loading, setLoading] = createSignal(false);
@@ -137,37 +136,29 @@ function ClaimSubdomainForm(props: {
         </Alert>
       </Show>
 
-      <div class="flex flex-col gap-1">
-        <label class="text-[10px] font-mono uppercase text-muted-foreground">
-          subdomain
-        </label>
+      <div class="w-full flex items-end gap-2">
+        <div class="flex flex-1 flex-col gap-1">
+          <label class="text-[10px] font-mono uppercase text-muted-foreground">
+            subdomain
+          </label>
 
-        <TextField>
-          <div class="flex items-center">
-            <TextFieldInput
-              value={name()}
-              onInput={(e) => setName(e.currentTarget.value)}
-              placeholder="myapp"
-              class="font-mono text-sm rounded rounded-r-none border-r-0"
-            />
+          <TextField>
+            <div class="flex items-center">
+              <TextFieldInput
+                value={name()}
+                onInput={(e) => setName(e.currentTarget.value)}
+                placeholder="myapp"
+                class="font-mono text-sm rounded rounded-r-none border-r-0"
+              />
 
-            <TextFieldLabel
-              class="py-3 border-1 border-border font-mono rounded rounded-l-none px-2"
-            >
-              .loves.rs
-            </TextFieldLabel>
-          </div>
-        </TextField>
-      </div>
-
-      <div class="flex gap-2">
-        <Button
-          onClick={props.onCancel}
-          variant="destructive"
-          class="px-3 py-1.5 border border-border rounded font-mono text-xs"
-        >
-          cancel
-        </Button>
+              <TextFieldLabel
+                class="py-3 border-1 border-border font-mono rounded rounded-l-none px-2"
+              >
+                .loves.rs
+              </TextFieldLabel>
+            </div>
+          </TextField>
+        </div>
 
         <Button
           onClick={submit}
@@ -225,8 +216,12 @@ function AddRecordForm({
       const res = await createRecord(subdomain, name(), data, type(), ttl());
 
       if (!res.ok) {
-        const d = await res.json();
-        setError(d.error ?? "Failed to add record");
+        try {
+          const d = await res.json();
+          setError(d.error ?? "Failed to add record");
+        } catch {
+          setError("Failed to add record");
+        }
       } else {
         onSuccess();
       }
@@ -260,7 +255,15 @@ function AddRecordForm({
           <input
             type="text"
             value={name()}
-            onInput={(e) => setName(e.currentTarget.value)}
+            onInput={(e) => {
+              setName(e.currentTarget.value);
+              const fullSub = flattenSubdomain(subdomain, e.currentTarget.value);
+              if (rigorouslyValidateSubdomain(fullSub, false)) {
+                setError(`Invalid record name: ${rigorouslyValidateSubdomain(fullSub, false)}`);
+              } else {
+                setError(null);
+              }
+            }}
             placeholder="e.g. www"
             class="bg-muted border border-border rounded text-foreground font-mono text-sm px-2 py-1.5 outline-none focus:border-accent w-full"
           />
@@ -291,16 +294,18 @@ function AddRecordForm({
         </div>
       </div>
 
-      <Show when={name() !== "" && !rigorouslyValidateSubdomain(flattenSubdomain(subdomain, name()))}>
-        <span class="text-xs font-mono text-muted-foreground">
-          Record will be created for
-          <span class="font-mono text-primary"> {flattenSubdomain(subdomain, name())}.loves.rs</span>
+      <Show when={name() === ""}>
+        <span class="text-[0.6rem] font-mono text-muted-foreground">
+          Records with name <span class="font-mono text-primary">@</span> will be created for
+          <span class="font-mono text-primary"> {subdomain}.loves.rs</span>. Records with any other name will be created for
+          <span class="font-mono text-primary"> [name].{subdomain}.loves.rs</span>.
         </span>
       </Show>
 
-      <Show when={name() !== "" && rigorouslyValidateSubdomain(flattenSubdomain(subdomain, name()))}>
-        <span class="text-xs font-mono text-ctp-red">
-          Invalid record name: {rigorouslyValidateSubdomain(flattenSubdomain(subdomain, name()))}
+      <Show when={name() !== "" && !rigorouslyValidateSubdomain(flattenSubdomain(subdomain, name()), false)}>
+        <span class="text-xs font-mono text-muted-foreground">
+          Record will be created for
+          <span class="font-mono text-primary"> {flattenSubdomain(subdomain, name())}.loves.rs</span>
         </span>
       </Show>
 
@@ -480,7 +485,6 @@ export default function SubdomainsPage() {
               setShowClaimForm(false);
               refetch();
             }}
-            onCancel={() => setShowClaimForm(false)}
           />
         </div>
       </Show>

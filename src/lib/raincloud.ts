@@ -2,6 +2,7 @@
 
 import { db } from "./db";
 import { records } from "./db/schema";
+import { rigorouslyValidateSubdomain, validateSubdomain } from "./utils";
 
 const parseTTL = (ttl: string): number => {
   if (ttl === "auto") {
@@ -28,6 +29,10 @@ const parseTTL = (ttl: string): number => {
 }
 
 export async function createRecord(subdomain: string, name: string, data: any, type: string, ttl: string) {
+  if (rigorouslyValidateSubdomain(name, false)) {
+    throw new Error(`Invalid record name: "${name}"`);
+  }
+
   console.log("Creating record:", { subdomain, name, data, type, ttl });
   const subName = name === "@" ? subdomain : `${name}.${subdomain}`;
 
