@@ -3,6 +3,7 @@ import { db } from "~/lib/db";
 import { subdomains } from "~/lib/db/schema";
 import { RESERVED_NAMES } from "~/lib/reserved";
 import { getCurrentUser } from "~/lib/session";
+import { validateSubdomain } from "~/lib/utils";
 
 export async function GET({ request }: { request: Request }) {
   const user = await getCurrentUser();
@@ -46,8 +47,8 @@ export async function POST({ request }: { request: Request }) {
     });
   }
 
-  // validate subdomain validity
-  if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(name)) {
+  // validate subdomain name
+  if (validateSubdomain(name) !== null) {
     return new Response(JSON.stringify({ error: "Invalid subdomain name" }), {
       status: 400,
       headers: { "Content-Type": "application/json" },
@@ -66,7 +67,7 @@ export async function POST({ request }: { request: Request }) {
   });
 
   if (existing) {
-    return new Response(JSON.stringify({ error: "Subdomain already exists" }), {
+    return new Response(JSON.stringify({ error: "Subdomain has already been claimed" }), {
       status: 400,
       headers: { "Content-Type": "application/json" },
     });

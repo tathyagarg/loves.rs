@@ -5,9 +5,20 @@ import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { TextField, TextFieldInput, TextFieldLabel } from "~/components/ui/text-field";
 import { createRecord } from "~/lib/raincloud";
+import { rigorouslyValidateSubdomain } from "~/lib/utils";
 
 const VALID_TYPES = ["A", "AAAA", "CNAME", "MX", "TXT", "NS", "SRV"] as const;
 type RecordType = (typeof VALID_TYPES)[number];
+
+const PLACEHOLDERS = {
+  A: "1.2.3.4",
+  AAAA: "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
+  CNAME: "example.com",
+  MX: "mail.example.com",
+  TXT: "some text",
+  NS: "ns1.example.com",
+  SRV: "_service._proto.name. TTL class SRV priority weight port target.",
+}
 
 interface DnsRecord {
   subdomain: string;
@@ -20,7 +31,7 @@ interface DnsRecord {
 interface Subdomain {
   name: string;
   ownerId: string;
-  state: "active" | "reserved";
+  state: "active" | "reserved" | "frozen";
   createdAt: string;
   records: DnsRecord[];
 }
@@ -37,6 +48,11 @@ async function fetchSubdomains(): Promise<Subdomain[]> {
     throw new Error("Failed to fetch subdomains");
   }
   return await res.json();
+}
+
+const flattenSubdomain = (sub: string, subsub: string) => {
+  if (subsub === "@") return sub;
+  return `${subsub}.${sub}`;
 }
 
 function ClaimSubdomainForm(props: {
@@ -84,7 +100,7 @@ function ClaimSubdomainForm(props: {
     <Card class="border border-border rounded-lg p-4 bg-card flex flex-col gap-3">
       <Show when={error()}>
         <Alert class="bg-ctp-red! text-ctp-base!">
-          <IconError />
+          <IconError class="text-ctp-base" />
           <AlertTitle>Error</AlertTitle>
           <AlertDescription>
             {error()}
@@ -140,7 +156,7 @@ function Badge({ state }: { state: Subdomain["state"] }) {
   return (
     <span
       class={`text-xs font-mono px-2 py-0.5 rounded border ${state === "active"
-        ? "bg-green/10 text-green border-green/30"
+        ? "bg-ctp-green/10 text-ctp-green border-ctp-green/30"
         : "bg-muted text-muted-foreground border-border"
         }`}
     >
@@ -227,7 +243,7 @@ function AddRecordForm({
             type="text"
             value={value()}
             onInput={(e) => setValue(e.currentTarget.value)}
-            placeholder="e.g. 1.2.3.4"
+            placeholder={`e.g. ${PLACEHOLDERS[type()]}`}
             class="bg-muted border border-border rounded text-foreground font-mono text-sm px-2 py-1.5 outline-none focus:border-accent w-full"
           />
         </div>
@@ -245,6 +261,20 @@ function AddRecordForm({
           </select>
         </div>
       </div>
+
+      <Show when={name() !== "" && !rigorouslyValidateSubdomain(flattenSubdomain(subdomain, name()))}>
+        <span class="text-xs font-mono text-muted-foreground">
+          Record will be created for
+          <span class="font-mono text-primary"> {flattenSubdomain(subdomain, name())}.loves.rs</span>
+        </span>
+      </Show>
+
+      <Show when={name() !== "" && rigorouslyValidateSubdomain(flattenSubdomain(subdomain, name()))}>
+        <span class="text-xs font-mono text-ctp-red">
+          Invalid record name: {rigorouslyValidateSubdomain(flattenSubdomain(subdomain, name()))}
+        </span>
+      </Show>
+
       <div class="flex items-center justify-between">
         <div class="flex gap-2">
           <Button
@@ -398,27 +428,21 @@ export default function SubdomainsPage() {
 
   return (
     <div class="relative z-3 top-12 max-w-3xl mx-auto px-4 py-8 flex flex-col gap-6">
-      <h1 class="text-2xl font-bold tracking-tight">My Subdomains</h1>
+      <div class="flex items-center justify-between border-b-1 border-border pb-2">
+        <h1 class="text-2xl font-bold tracking-tight">My Subdomains</h1>
 
-      <For each={subdomains()}>
-        {(sub) => (
-          <SubdomainCard
-            subdomain={sub}
-            onRefetch={refetch}
-          />
-        )}
-      </For>
-
-      <Show when={!subdomains.loading}>
-        <Show when={(subdomains()?.length ?? 0) < 3}>
-          <Button
-            onClick={() => setShowClaimForm(!showClaimForm())}
-            class="text-xs font-mono px-3 py-1.5 rounded bg-primary text-primary-foreground"
-          >
-            {showClaimForm() ? "cancel" : "+ claim new"}
-          </Button>
+        <Show when={!subdomains.loading}>
+          <Show when={(subdomains()?.length ?? 0) < 3}>
+            <Button
+              onClick={() => setShowClaimForm(!showClaimForm())}
+              class="text-xs font-mono px-3 py-1.5 rounded text-primary-foreground"
+              variant={showClaimForm() ? "destructive" : "default"}
+            >
+              {showClaimForm() ? "cancel" : "+ claim new"}
+            </Button>
+          </Show>
         </Show>
-      </Show>
+      </div>
 
       <Show when={showClaimForm()}>
         <div class="mb-4">
@@ -431,6 +455,15 @@ export default function SubdomainsPage() {
           />
         </div>
       </Show>
+
+      <For each={subdomains()}>
+        {(sub) => (
+          <SubdomainCard
+            subdomain={sub}
+            onRefetch={refetch}
+          />
+        )}
+      </For>
     </div>
   );
 }
