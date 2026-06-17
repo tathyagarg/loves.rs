@@ -1,6 +1,7 @@
 import { createAsync } from "@solidjs/router";
 import { createSignal, Show } from "solid-js";
 import Footer from "~/components/Footer";
+import { IconGithub } from "~/components/icons";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent } from "~/components/ui/card";
 import { Separator } from "~/components/ui/separator";
@@ -133,11 +134,21 @@ export default function Home() {
           <p class="mt-5 text-muted-foreground text-xs font-mono">
             e.g.{" "}
             <span class="text-foreground">alice.loves.rs</span>,{" "}
-            <span class="text-foreground">dev.loves.rs</span>,{" "}
-            <span class="text-foreground">blog.loves.rs</span>
+            <span class="text-foreground">bob.loves.rs</span>,{" "}
+            <span class="text-foreground">charlie.loves.rs</span>
           </p>
 
-          <Show when={user()}>
+          <Show
+            when={user()}
+            fallback={
+              <a href="/api/auth/github" rel="external" class="mt-8">
+                <Button variant="default" size="sm" class="font-mono text-xs tracking-wider gap-2">
+                  <IconGithub />
+                  sign in with GitHub
+                </Button>
+              </a>
+            }
+          >
             <Button
               variant="link"
               size="lg"
