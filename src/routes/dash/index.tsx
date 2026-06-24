@@ -8,17 +8,15 @@ import { createRecord } from "~/lib/raincloud";
 import { getCurrentUser, approveUser, userHasStarred } from "~/lib/session";
 import { rigorouslyValidateSubdomain } from "~/lib/utils";
 
-const VALID_TYPES = ["A", "AAAA", "CNAME", "MX", "TXT", "NS", "SRV"] as const;
+const VALID_TYPES = ["A", "AAAA", "CNAME", "TXT", "NS"] as const;
 type RecordType = (typeof VALID_TYPES)[number];
 
 const PLACEHOLDERS = {
   A: "1.2.3.4",
   AAAA: "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
   CNAME: "example.com",
-  MX: "mail.example.com",
   TXT: "some text",
   NS: "ns1.example.com",
-  SRV: "_service._proto.name. TTL class SRV priority weight port target.",
 }
 
 interface DnsRecord {
