@@ -29,12 +29,13 @@ const parseTTL = (ttl: string): number => {
 }
 
 export async function createRecord(subdomain: string, name: string, data: any, type: string, ttl: string) {
-  if (rigorouslyValidateSubdomain(name, false)) {
+  const subName = name === "@" ? subdomain : `${name}.${subdomain}`;
+
+  if (rigorouslyValidateSubdomain(subName, false)) {
     throw new Error(`Invalid record name: "${name}"`);
   }
 
-  console.log("Creating record:", { subdomain, name, data, type, ttl });
-  const subName = name === "@" ? subdomain : `${name}.${subdomain}`;
+  console.log("Creating record:", { subdomain, name: subName, data, type, ttl });
 
   const result = await fetch("https://raincloudns.dev/api/v1/zones/loves.rs/records", {
     method: "PUT",
